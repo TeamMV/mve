@@ -4,6 +4,7 @@ use mvutils::try_from_string;
 pub enum Token {
     Ident(String),
     Literal(Literal),
+    Lifetime(String),
 
     Dot,
     Comma,
@@ -28,6 +29,7 @@ pub enum Token {
     //]
     Assign, //=,
     Arrow, //->
+    Dollar, // $
 
     Operator(Operator),
     OperatorAssign(Operator),
@@ -113,7 +115,8 @@ pub enum Keyword {
     Impl,
     Crate,
     Pub,
-    Extern
+    Extern,
+    Mod,
 }
 
 #[derive(Debug, Clone, PartialEq)]

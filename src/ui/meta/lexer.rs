@@ -212,6 +212,8 @@ impl Iterator for Lexer {
 
                     '}' => Some(Token::RBrace),
 
+                    '$' => Some(Token::Dollar),
+
                     '&' => {
                         if self.input.peek().is_some_and(|x| *x == '&') {
                             self.input.next();
@@ -294,7 +296,11 @@ impl Iterator for Lexer {
 
                         if c == '"' {
                             while self.input.peek().is_some_and(|x| *x != '"') {
-                                s.push(self.input.next().unwrap())
+                                let c = self.input.next().unwrap();
+                                s.push(c);
+                                if c == '\\' {
+                                    s.push(self.input.next().unwrap());
+                                }
                             }
                             self.input.next();
                             return Some(Token::Literal(Literal::String(
@@ -303,16 +309,36 @@ impl Iterator for Lexer {
                         }
 
                         if c == '\'' {
-                            while self.input.peek().is_some_and(|x| *x != '"') {
-                                s.push(self.input.next().unwrap())
+                            let mut buf = String::new();
+                            let mut fmt = false;
+                            let c = self.input.next().unwrap();
+                            buf.push(c);
+                            if c == '\\' {
+                                fmt = true;
+                                buf.push(self.input.next().unwrap());
                             }
-                            self.input.next();
-                            return Some(Token::Literal(Literal::String(
-                                s,
-                            )));
+                            let mut c = self.input.peek().unwrap();
+
+                            if *c == '\'' {
+                                return if fmt {
+                                    Some(Token::Literal(Literal::String(buf)))
+                                } else {
+                                    Some(Token::Literal(Literal::Char(
+                                        buf.pop().unwrap()
+                                    )))
+                                }
+                            }
+
+                            while c.is_alphanumeric() || *c == '_' {
+                                buf.push(*c);
+                                self.input.next().unwrap();
+                                c = self.input.peek().unwrap();
+                            }
+
+                            return Some(Token::Lifetime(buf));
                         }
 
-                        panic!("ERROR: Invalid syntax!");
+                        panic!("ERROR: Invalid syntax! {}", c);
                     }
                 };
             }
