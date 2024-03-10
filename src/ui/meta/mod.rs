@@ -1,9 +1,9 @@
-use std::fs::{create_dir_all, read_dir, File, OpenOptions, ReadDir};
-use std::io::{Read, Write};
-use std::path::PathBuf;
 use crate::ui::consts::{META_FILE, META_PATH, UI_ANNOTATION, UI_PATH};
 use crate::ui::meta::lexer::Lexer;
 use crate::ui::meta::token::{Keyword, Token};
+use std::fs::{create_dir_all, read_dir, File, OpenOptions, ReadDir};
+use std::io::{Read, Write};
+use std::path::PathBuf;
 
 pub mod lexer;
 pub mod token;
@@ -34,7 +34,9 @@ fn search(dir: ReadDir, path: Vec<String>) -> Result<String, std::io::Error> {
         let file = file_name.ends_with(".rs");
         if file {
             file_name.truncate(file_name.len() - 3);
-            if !((file_name == "lib" || file_name == "main") && new_path.is_empty()) && (file_name != "mod" || new_path.is_empty()) {
+            if !((file_name == "lib" || file_name == "main") && new_path.is_empty())
+                && (file_name != "mod" || new_path.is_empty())
+            {
                 new_path.push(file_name);
             }
         } else {
@@ -60,7 +62,7 @@ fn check_file(file_path: PathBuf, path: Vec<String>) -> Result<String, std::io::
     let mut res = String::new();
 
     let mut tokens = Lexer::new(contents);
-    let mut tag ;
+    let mut tag;
 
     while let Some(mut token) = tokens.next() {
         if token == Token::EOF {
@@ -113,8 +115,7 @@ fn check_file(file_path: PathBuf, path: Vec<String>) -> Result<String, std::io::
         if let Token::Ident(ident) = token {
             if path.is_empty() {
                 res.push_str(&format!("{}={};", tag, ident));
-            }
-            else {
+            } else {
                 res.push_str(&format!("{}={}::{};", tag, path, ident));
             }
         }

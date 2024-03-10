@@ -1,11 +1,11 @@
+use crate::ui::meta::token::{Keyword, Literal, Operator, Token};
 use std::iter::Peekable;
 use std::vec::IntoIter;
-use crate::ui::meta::token::{Keyword, Literal, Operator, Token};
 
 pub struct Lexer {
     input: Peekable<IntoIter<char>>,
     revert: Vec<Token>,
-    done: bool
+    done: bool,
 }
 
 impl Lexer {
@@ -268,7 +268,7 @@ impl Iterator for Lexer {
                                 Some(Token::Keyword(keyword))
                             } else {
                                 Some(Token::Ident(s))
-                            }
+                            };
                         }
 
                         if c.is_ascii_digit() {
@@ -289,9 +289,7 @@ impl Iterator for Lexer {
                                 s.push(self.input.next().unwrap());
                             }
 
-                            return Some(Token::Literal(Literal::Float(
-                                s.parse::<f64>().unwrap(),
-                            )));
+                            return Some(Token::Literal(Literal::Float(s.parse::<f64>().unwrap())));
                         }
 
                         if c == '"' {
@@ -303,9 +301,7 @@ impl Iterator for Lexer {
                                 }
                             }
                             self.input.next();
-                            return Some(Token::Literal(Literal::String(
-                                s,
-                            )));
+                            return Some(Token::Literal(Literal::String(s)));
                         }
 
                         if c == '\'' {
@@ -323,10 +319,8 @@ impl Iterator for Lexer {
                                 return if fmt {
                                     Some(Token::Literal(Literal::String(buf)))
                                 } else {
-                                    Some(Token::Literal(Literal::Char(
-                                        buf.pop().unwrap()
-                                    )))
-                                }
+                                    Some(Token::Literal(Literal::Char(buf.pop().unwrap())))
+                                };
                             }
 
                             while c.is_alphanumeric() || *c == '_' {

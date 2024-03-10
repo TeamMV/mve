@@ -101,8 +101,7 @@ pub fn tokenize(xml: String) -> Vec<Token> {
                         ident.push(iter.next().unwrap());
                     }
                     tokens.push(Token::Ident(ident));
-                }
-                else if c.is_numeric() {
+                } else if c.is_numeric() {
                     let mut num = c.to_string();
                     let mut is_float = false;
 
@@ -136,7 +135,12 @@ pub fn tokenize(xml: String) -> Vec<Token> {
     tokens
 }
 
-fn extract_contents(tokens: &mut Vec<Token>, iter: &mut Peekable<Chars>, inside: &mut bool, c: char) {
+fn extract_contents(
+    tokens: &mut Vec<Token>,
+    iter: &mut Peekable<Chars>,
+    inside: &mut bool,
+    c: char,
+) {
     let mut contents = c.to_string();
     let mut open = false;
     let mut open_closing = false;

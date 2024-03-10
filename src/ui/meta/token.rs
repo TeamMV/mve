@@ -28,7 +28,7 @@ pub enum Token {
     RBracket,
     //]
     Assign, //=,
-    Arrow, //->
+    Arrow,  //->
     Dollar, // $
 
     Operator(Operator),
