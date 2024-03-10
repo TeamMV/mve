@@ -4,10 +4,10 @@ use std::fs::{create_dir_all, read_dir, File, OpenOptions, ReadDir};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
-pub mod compiler;
 pub mod consts;
 pub mod meta;
 pub mod parser;
+pub mod xml;
 
 pub fn compile() {
     if let Ok(dir) = read_dir(UI_PATH) {
@@ -43,7 +43,7 @@ fn process_file(file_path: PathBuf, relative: PathBuf) -> Result<(), std::io::Er
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
 
-    let compiled_contents = compiler::compile(contents);
+    let compiled_contents = xml::compile(contents);
 
     let mut output_path = Path::new(UI_COMPILED_PATH).join(relative);
     output_path.set_extension("rs");
@@ -71,7 +71,7 @@ fn load_meta(mut file: File) -> Result<(), std::io::Error> {
         .map(|pair| pair.split_once('=').expect(&format!("Failed to parse {} file",META_FILE)))
         .for_each(|(tag, path)| {
             ELEMENTS
-                .lock()
+                .write()
                 .recover()
                 .push((tag.trim().to_string(), path.trim().to_string()))
         });

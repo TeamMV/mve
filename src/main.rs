@@ -1,14 +1,19 @@
 pub mod ui;
 
-struct A<'testing123_test, '_a, 'hi> {
-    a: &'testing123_test str,
-    b: &'_a str,
-    c: &'hi str,
-    d: &'hi str,
-}
-
 fn main() {
     let a = '\t';
+    //ui::meta::generate_meta();
     //ui::compile();
-    ui::meta::generate_meta();
+    let xml_input = r#"
+        <label>Hello</label>
+        <button type="button" onclick="myfunction">Click me</button>
+        <label myAttrib=10 />
+        <element>
+            <label>Hi</label>
+        </element>
+    "#;
+    let tokens = ui::xml::lexer::tokenize(xml_input.to_string());
+    let tree = ui::xml::parser::parse(tokens);
+    let generated = ui::xml::codegen::generate(tree);
+    println!("{}", generated);
 }
