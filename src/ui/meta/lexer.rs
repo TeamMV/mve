@@ -254,6 +254,56 @@ impl Iterator for Lexer {
                     _ => {
                         let mut s: String = String::new();
                         if c.is_ascii_alphabetic() || c == '_' {
+                            if c == 'r' && self.input.peek().is_some_and(|c| *c == '#') {
+                                let mut hash_count = 0;
+                                self.input.next();
+
+                                while self.input.peek().is_some_and(|x| *x == '#') {
+                                    hash_count += 1;
+                                    self.input.next();
+                                }
+
+                                return if self.input.peek().is_some_and(|x| *x == '"') {
+                                    self.input.next();
+
+                                    loop {
+                                        match self.input.next() {
+                                            Some('"') => {
+                                                let mut close_hash_count = 0;
+                                                while close_hash_count < hash_count
+                                                    && self.input.peek().is_some_and(|x| *x == '#')
+                                                {
+                                                    close_hash_count += 1;
+                                                    self.input.next();
+                                                }
+
+                                                if close_hash_count == hash_count {
+                                                    break;
+                                                } else {
+                                                    s.push('"');
+                                                    s.extend(
+                                                        std::iter::repeat('#')
+                                                            .take(close_hash_count),
+                                                    );
+                                                }
+                                            }
+                                            Some(ch) => s.push(ch),
+                                            None => break,
+                                        }
+                                    }
+
+                                    Some(Token::Literal(Literal::String(s)))
+                                } else {
+                                    while self
+                                        .input
+                                        .peek()
+                                        .is_some_and(|x| (*x).is_ascii_alphanumeric() || *x == '_')
+                                    {
+                                        s.push(self.input.next().unwrap());
+                                    }
+                                    Some(Token::RawIdent(s))
+                                };
+                            }
                             s.push(c);
                             while self
                                 .input

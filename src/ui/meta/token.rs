@@ -3,6 +3,7 @@ use mvutils::try_from_string;
 #[derive(PartialEq, Clone)]
 pub enum Token {
     Ident(String),
+    RawIdent(String),
     Literal(Literal),
     Lifetime(String),
 

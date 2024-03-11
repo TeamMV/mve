@@ -1,4 +1,6 @@
 use crate::ui::consts::{LIB_PATH, MAIN_PATH, UI_COMPILED_PATH, UI_MOD_PATH};
+use crate::ui::meta::lexer::Lexer;
+use crate::ui::meta::token::{Keyword, Token};
 use hashbrown::HashSet;
 use std::fs::{read_dir, File, OpenOptions};
 use std::io::{Read, Write};
@@ -7,8 +9,6 @@ use std::process::Command;
 
 pub fn generate_modules(paths: Vec<PathBuf>) -> Result<(), std::io::Error> {
     let mut modules: HashSet<PathBuf> = ["".into()].into();
-
-    format();
 
     for path in paths {
         if let Ok(relative_path) = path.strip_prefix(UI_COMPILED_PATH) {
@@ -45,15 +45,14 @@ pub fn generate_modules(paths: Vec<PathBuf>) -> Result<(), std::io::Error> {
     }
 
     update_ui_mod_file()?;
-
     format();
 
     Ok(())
 }
 
 fn update_ui_mod_file() -> Result<(), std::io::Error> {
-    let generated = "mod generated;";
-    let ui = "mod ui;";
+    let generated = "generated";
+    let ui = "ui";
 
     if !update_file_if_exists(UI_MOD_PATH, generated)? {
         let mut ui_mod_file = File::create(UI_MOD_PATH)?;
@@ -67,20 +66,41 @@ fn update_ui_mod_file() -> Result<(), std::io::Error> {
     Ok(())
 }
 
-fn update_file_if_exists(file: &str, decl: &str) -> Result<bool, std::io::Error> {
+fn update_file_if_exists(file: &str, module: &str) -> Result<bool, std::io::Error> {
     let path = Path::new(file);
     if path.exists() {
         let mut contents = String::new();
         File::open(path)?.read_to_string(&mut contents)?;
 
-        if !contents.contains(decl) {
+        let lexer = Lexer::new(contents);
+
+        if !mod_exists(lexer, module) {
             let mut file = OpenOptions::new().append(true).open(path)?;
-            writeln!(file, "pub {}", decl)?;
+            writeln!(file, "\npub mod {};", module)?;
         }
         Ok(true)
     } else {
         Ok(false)
     }
+}
+
+fn mod_exists(lexer: Lexer, module: &str) -> bool {
+    let mut lexer = lexer.peekable();
+    while let Some(token) = lexer.next() {
+        match token {
+            Token::Keyword(Keyword::Mod) => {
+                if let Some(Token::Ident(name)) | Some(Token::RawIdent(name)) = lexer.peek() {
+                    if name == module {
+                        return true;
+                    }
+                }
+            }
+            Token::EOF => break,
+            _ => continue,
+        }
+    }
+
+    false
 }
 
 fn format() {
