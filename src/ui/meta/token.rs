@@ -118,6 +118,7 @@ pub enum Keyword {
     Pub,
     Extern,
     Mod,
+    Use,
 }
 
 #[derive(Debug, Clone, PartialEq)]

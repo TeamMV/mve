@@ -24,6 +24,10 @@ pub fn compile() {
         let mut uis = Vec::new();
         process(dir, "".into(), &mut styles, &mut uis).expect("Failed to read assets UI directory");
 
+        if uis.is_empty() {
+            return;
+        }
+
         if Path::new(UI_COMPILED_PATH).exists() {
             if let Err(e) = remove_dir_all(UI_COMPILED_PATH) {
                 eprintln!("Error removing directory '{}': {}", UI_COMPILED_PATH, e);

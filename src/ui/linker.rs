@@ -1,6 +1,6 @@
 use crate::ui::consts::{LIB_PATH, MAIN_PATH, UI_COMPILED_PATH, UI_MOD_PATH};
 use crate::ui::meta::lexer::Lexer;
-use crate::ui::meta::token::{Keyword, Token};
+use crate::ui::meta::token::{Keyword, Operator, Token};
 use hashbrown::HashSet;
 use std::fs::{read_dir, File, OpenOptions};
 use std::io::{Read, Write};
@@ -56,7 +56,13 @@ fn update_ui_mod_file() -> Result<(), std::io::Error> {
 
     if !update_file_if_exists(UI_MOD_PATH, generated)? {
         let mut ui_mod_file = File::create(UI_MOD_PATH)?;
-        writeln!(ui_mod_file, "pub {}", generated)?;
+        writeln!(
+            ui_mod_file,
+            "pub mod {};\npub use {}::*;",
+            generated, generated
+        )?;
+    } else {
+        check_public_export(UI_MOD_PATH, generated)?;
     }
 
     if !update_file_if_exists(MAIN_PATH, ui)? {
@@ -67,6 +73,25 @@ fn update_ui_mod_file() -> Result<(), std::io::Error> {
 }
 
 fn update_file_if_exists(file: &str, module: &str) -> Result<bool, std::io::Error> {
+    fn exists(lexer: Lexer, module: &str) -> bool {
+        let mut lexer = lexer.peekable();
+        while let Some(token) = lexer.next() {
+            match token {
+                Token::Keyword(Keyword::Mod) => {
+                    if let Some(Token::Ident(name)) | Some(Token::RawIdent(name)) = lexer.peek() {
+                        if name == module {
+                            return true;
+                        }
+                    }
+                }
+                Token::EOF => break,
+                _ => continue,
+            }
+        }
+
+        false
+    }
+
     let path = Path::new(file);
     if path.exists() {
         let mut contents = String::new();
@@ -74,7 +99,7 @@ fn update_file_if_exists(file: &str, module: &str) -> Result<bool, std::io::Erro
 
         let lexer = Lexer::new(contents);
 
-        if !mod_exists(lexer, module) {
+        if !exists(lexer, module) {
             let mut file = OpenOptions::new().append(true).open(path)?;
             writeln!(file, "\npub mod {};", module)?;
         }
@@ -84,23 +109,43 @@ fn update_file_if_exists(file: &str, module: &str) -> Result<bool, std::io::Erro
     }
 }
 
-fn mod_exists(lexer: Lexer, module: &str) -> bool {
-    let mut lexer = lexer.peekable();
-    while let Some(token) = lexer.next() {
-        match token {
-            Token::Keyword(Keyword::Mod) => {
-                if let Some(Token::Ident(name)) | Some(Token::RawIdent(name)) = lexer.peek() {
-                    if name == module {
-                        return true;
+fn check_public_export(file: &str, module: &str) -> Result<(), std::io::Error> {
+    fn exists(lexer: Lexer, module: &str) -> bool {
+        let mut lexer = lexer.peekable();
+        while let Some(token) = lexer.next() {
+            match token {
+                Token::Keyword(Keyword::Pub) => {
+                    if let Some(Token::Keyword(Keyword::Use)) = lexer.peek() {
+                        lexer.next();
+                        if let Some(Token::Ident(ident)) = lexer.next() {
+                            if ident != module || lexer.next() != Some(Token::DColon) {
+                                continue;
+                            }
+                            if lexer.next() == Some(Token::Operator(Operator::Multiply)) {
+                                return true;
+                            }
+                        }
                     }
                 }
+                Token::EOF => break,
+                _ => continue,
             }
-            Token::EOF => break,
-            _ => continue,
         }
+
+        false
     }
 
-    false
+    let path = Path::new(file);
+    let mut contents = String::new();
+    File::open(path)?.read_to_string(&mut contents)?;
+    let mut lexer = Lexer::new(contents);
+
+    if !exists(lexer, module) {
+        let mut file = OpenOptions::new().append(true).open(path)?;
+        writeln!(file, "pub use {}::*;", module)?;
+    }
+
+    Ok(())
 }
 
 fn format() {
